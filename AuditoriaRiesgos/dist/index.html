@@ -1,10 +1,44 @@
-<!-- dist/index.html -->
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <title>Gestión de Riesgos</title>
+  <meta charset="UTF-8">
+  <title>Login Ficticio</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 40px; }
+    .login-box { max-width: 400px; margin: auto; border: 1px solid #ccc; padding: 20px; border-radius: 10px; }
+    input, button { display: block; width: 100%; margin: 10px 0; padding: 8px; }
+  </style>
 </head>
 <body>
-    <h1>Bienvenido a la herramienta ISO 27001</h1>
+  <div class="login-box">
+    <h2>Iniciar sesión</h2>
+    <input type="text" id="usuario" placeholder="Usuario">
+    <input type="password" id="contrasena" placeholder="Contraseña">
+    <button onclick="iniciarSesion()">Ingresar</button>
+    <p id="mensaje"></p>
+  </div>
+
+  <script>
+    async function iniciarSesion() {
+      const usuario = document.getElementById('usuario').value;
+      const contrasena = document.getElementById('contrasena').value;
+
+      const response = await fetch('/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ usuario, contrasena })
+      });
+
+      const data = await response.json();
+      const mensaje = document.getElementById('mensaje');
+
+      if (response.ok) {
+        mensaje.innerText = `✅ Bienvenido, ${data.usuario}`;
+        // Aquí podrías redirigir o mostrar otra parte de la app
+      } else {
+        mensaje.innerText = `❌ ${data.error}`;
+      }
+    }
+  </script>
 </body>
 </html>
