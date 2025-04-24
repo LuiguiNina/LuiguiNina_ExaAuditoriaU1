@@ -1,0 +1,69 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:16-bullseye@sha256:7174d2a352ad138906e3dc4a28a5d11b5a158180e9bff80beed8c8cc346f874c
+    env_file:
+      - ./.env.example
+    environment:
+      POSTGRES_DB: ${SQL_DATABASE:-audit}
+      POSTGRES_USER: ${SQL_USER:-postgres}
+      POSTGRES_PASSWORD: ${SQL_PASSWORD:-postgres}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    expose:
+      - ${SQL_PORT:-5432}
+    restart: on-failure
+  web:
+    build: 
+      context: ./
+    image: mobile_audit
+    env_file:
+      - ./.env.example
+    entrypoint: [ '/web_entrypoint.sh' ]
+    volumes:
+      - .:/app
+    expose:
+      - "8000"
+    depends_on:
+      - db
+    restart: on-failure
+  nginx:
+    image: nginx:stable-bullseye@sha256:ee187e563496b690edaab157f89db924cd35fab42631309f4d62957baecf7d6c
+    ports:
+      - "8888:8888"
+    volumes:
+      - .:/app
+      - ./nginx/app.conf:/etc/nginx/conf.d/app.conf
+      - ./nginx/logs:/var/log/nginx
+    depends_on:
+      - web
+    restart: on-failure
+  rabbitmq:
+    image: rabbitmq:3.13.0-management@sha256:ba406c7daaef53b59c92a13db37a27d0425579a40c59266d10022a40a8ba7242
+    env_file:
+      - ./.env.example
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-guest}
+    volumes:
+      - ./rabbitmq/logs/:/var/log/rabbitmq/
+    expose:
+      - "5672"
+    depends_on:
+      - web
+    restart: on-failure
+  worker:
+    image: mobile_audit
+    env_file:
+      - ./.env.example
+    entrypoint: [ '/worker_entrypoint.sh' ]
+    volumes:
+      - .:/app
+    links:
+      - rabbitmq
+      - web
+    depends_on:
+      - rabbitmq
+    restart: on-failure
+volumes:
+  db-data:
